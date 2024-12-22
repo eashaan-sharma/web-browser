@@ -1,13 +1,13 @@
 #import socket
 
 #class URL:
-#    def __init__(self, url):
+#    def init(self, url):
         #Dk what this does, gotta google
 #        self.scheme, url = url.split(".//", 1)
 #        assert self.scheme == "http"
 
 #class URL:
-#    def __init__(self, url):
+#    def init(self, url):
         # ...
 #        if "/" not in url:
 #            url = url + "/"
@@ -32,6 +32,8 @@ window = tkinter.Tk()
 tkinter.mainloop()
 
 WIDTH, HEIGHT = 800, 600
+HSTEP, VSTEP = 13, 18
+SCROLL_STEP = 100
 
 class Browser:
     def _init_(self):
@@ -42,16 +44,31 @@ class Browser:
             height=HEIGHT
         )
         self.canvas.pack()
+        self.scroll = 0
+        self.window.bind("<Down>", self.scrolldown)
+
+    def scrolldown(self, e):
+        self.scroll += SCROLL_STEP
+        self.draw()
+
+    def draw(self):
+        self.canvas.delete("all")
+        for x, y, c in self.display_list:
+            if y > self.scroll + HEIGHT: continue
+            if y + VSTEP < self.scroll: continue
+            self.canvas.create_text(x, y - self.scroll, text = c)
+        
         
 
     def load(self, url):
         body = url.request()
         text = lex(body)
+        self.display_list = layout(text)
+        self.draw()
         self.canvas.create_rectangle(10, 20, 400, 300)
         self.canvas.create_oval(100, 100, 150, 150)
         self.canvas.create_text(200, 150, text="Hi")
 
-        HSTEP, VSTEP = 13, 18
         cursor_x, cursor_y = HSTEP, VSTEP
         for c in text:
             self.canvas.create_text(cursor_x, cursor_y, text=c)
@@ -61,6 +78,18 @@ class Browser:
                 cursor_y += VSTEP
                 cursor_x = HSTEP
 
+def layout(text):
+    display_list = []
+    cursor_x, cursor_y = HSTEP, VSTEP
+    for c in text:
+        display_list.append((cursor_x, cursor_y, c))
+
+    return display_list
+
+
+
+
+#ns
 class URL:
     def _init_(self, url):
         self.scheme, url = url.split("://", 1)
@@ -120,7 +149,7 @@ def lex(body):
 
 
 
-if _name_ == "_main_":
+if __name__ == "_main_":
     import sys
     Browser().load(URL(sys.argv[1]))
     tkinter.mainloop()
