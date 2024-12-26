@@ -27,16 +27,12 @@ import socket
 import ssl
 import tkinter
 
-
-window = tkinter.Tk()
-tkinter.mainloop()
-
 WIDTH, HEIGHT = 800, 600
 HSTEP, VSTEP = 13, 18
 SCROLL_STEP = 100
 
 class Browser:
-    def _init_(self):
+    def __init__(self):
         self.window = tkinter.Tk()
         self.canvas = tkinter.Canvas(
             self.window,
@@ -52,46 +48,35 @@ class Browser:
         self.draw()
 
     def draw(self):
-        self.canvas.delete("all")
+        self.canvas.delete("all") 
         for x, y, c in self.display_list:
-            if y > self.scroll + HEIGHT: continue
-            if y + VSTEP < self.scroll: continue
-            self.canvas.create_text(x, y - self.scroll, text = c)
-        
-        
+            if self.scroll <= y < self.scroll + HEIGHT:
+                self.canvas.create_text(x, y - self.scroll, text=c)
 
     def load(self, url):
         body = url.request()
         text = lex(body)
         self.display_list = layout(text)
         self.draw()
-        self.canvas.create_rectangle(10, 20, 400, 300)
-        self.canvas.create_oval(100, 100, 150, 150)
-        self.canvas.create_text(200, 150, text="Hi")
-
-        cursor_x, cursor_y = HSTEP, VSTEP
-        for c in text:
-            self.canvas.create_text(cursor_x, cursor_y, text=c)
-            cursor_x += HSTEP
-
-            if cursor_x >= WIDTH - HSTEP:
-                cursor_y += VSTEP
-                cursor_x = HSTEP
 
 def layout(text):
     display_list = []
     cursor_x, cursor_y = HSTEP, VSTEP
     for c in text:
+#NEWNEWNEWNEWNEW
+        if c == "\n":  # Handle newlines
+            cursor_y += VSTEP
+            cursor_x = HSTEP
+        elif cursor_x + HSTEP >= WIDTH:  # Handle word wrapping
+            cursor_y += VSTEP
+            cursor_x = HSTEP
+#NEWNEWNEWNEWNEW
         display_list.append((cursor_x, cursor_y, c))
-
+        cursor_x += HSTEP
     return display_list
 
-
-
-
-#ns
 class URL:
-    def _init_(self, url):
+    def __init__(self, url):
         self.scheme, url = url.split("://", 1)
         assert self.scheme in ["http", "https"]
         if "/" not in url:
@@ -125,7 +110,7 @@ class URL:
                 break
             header, value = line.split(":", 1)
             headers[header.casefold()] = value.strip()
-        
+
         assert "transfer-encoding" not in headers
         assert "content-encoding" not in headers
 
@@ -144,14 +129,15 @@ def lex(body):
             in_tag = False
         elif not in_tag:
             text += c
-    return text    
+    return text
 
-
-
-
-if __name__ == "_main_":
+if __name__ == "__main__":
     import sys
-    Browser().load(URL(sys.argv[1]))
-    tkinter.mainloop()
+    if len(sys.argv) < 2:
+        print("Usage: python3 script.py <URL>")
+    else:
+        Browser().load(URL(sys.argv[1]))
+        tkinter.mainloop()
+
 
 #python pathto/telnet.py http://example.org/
