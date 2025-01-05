@@ -34,45 +34,58 @@ SCROLL_STEP = 100
 class Browser:
     def __init__(self):
         self.window = tkinter.Tk()
-        self.canvas = tkinter.Canvas(
-            self.window,
-            width=WIDTH,
-            height=HEIGHT
-        )
-        self.canvas.pack()
+        self.canvas = tkinter.Canvas(self.window)
+        self.canvas.pack(fill = tkinter.BOTH, expand=True)      # Dynamic packing to resize with window
         self.scroll = 0
-        self.window.bind("<Down>", self.scrolldown)
+        self.width = WIDTH  # Default
+        self.height = HEIGHT   #Default
+        self.window.bind("<Down>", self.scrolldown)     # Keybind to scroll down
+        self.window.bind("<Up>", self.scrollup)         # Keybind to scroll up
+        self.window.bind("<Configure>", self.resize)    # Adds resize binding
 
     def scrolldown(self, e):
         self.scroll += SCROLL_STEP
+        self.draw()
+    def scrollup(self, e):
+        self.scroll -= SCROLL_STEP
         self.draw()
 
     def draw(self):
         self.canvas.delete("all") 
         for x, y, c in self.display_list:
-            if self.scroll <= y < self.scroll + HEIGHT:
+            if self.scroll <= y < self.scroll + self.height:
                 self.canvas.create_text(x, y - self.scroll, text=c)
 
     def load(self, url):
         body = url.request()
         text = lex(body)
-        self.display_list = layout(text)
+        self.text = text    # Stores text for resizing
+        self.display_list = layout(text, self.width)
         self.draw()
 
-def layout(text):
+    def resize(self, event):
+        # Handles window resize events
+        self.width = event.width    # Capture new width
+        self.height = event.height  # Capture new height
+        self.display_list = layout(self.text, self.width)   # Recalculate layout
+        self.draw()     # Redraw the content
+        
+def layout(text, width):
     display_list = []
     cursor_x, cursor_y = HSTEP, VSTEP
-    for c in text:
-#NEWNEWNEWNEWNEW
-        if c == "\n":  # Handle newlines
+    max_line_width = width - HSTEP  # Calculate layout based on current width
+
+    words = text.split()  # Split text into words
+    for word in words:
+        word_width = len(word) * HSTEP  # Approximate width of the word
+        if cursor_x + word_width > max_line_width:  # Wrap to next line if it doesn't fit
             cursor_y += VSTEP
             cursor_x = HSTEP
-        elif cursor_x + HSTEP >= WIDTH:  # Handle word wrapping
-            cursor_y += VSTEP
-            cursor_x = HSTEP
-#NEWNEWNEWNEWNEW
-        display_list.append((cursor_x, cursor_y, c))
-        cursor_x += HSTEP
+        for c in word:  # Add each character to the display list
+            display_list.append((cursor_x, cursor_y, c))
+            cursor_x += HSTEP
+        cursor_x += HSTEP  # Add space after each word
+
     return display_list
 
 class URL:
